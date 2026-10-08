@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Residents - Parking Management System{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            <i class="fas fa-users me-2"></i>Manage Residents
+        </h2>
+        <a href="{{ url_for('add_resident') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Resident
+        </a>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+    {% endif %}
+
+    {% if residents %}
+        <div class="card shadow-sm border-0">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Resident List
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Floor</th>
+                                <th>Door</th>
+                                <th>Username</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resident in residents %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">#{{ resident[0] }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-primary text-white me-2">
+                                            {{ resident[1][0].upper() }}
+                                        </div>
+                                        <strong>{{ resident[1] }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ resident[2] }}" class="text-decoration-none">
+                                        <i class="fas fa-envelope me-1"></i>{{ resident[2] }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="tel:{{ resident[3] }}" class="text-decoration-none">
+                                        <i class="fas fa-phone me-1"></i>{{ resident[3] }}
+                                    </a>
+                                </td>
+                                <td>{{ resident[7] if resident[7] != 'N/A' else '<span class="text-muted">N/A</span>' | safe }}</td>
+                                <td>{{ resident[8] if resident[8] != 'N/A' else '<span class="text-muted">N/A</span>' | safe }}</td>
+                                <td>{{ resident[5] }}</td>
+                                <td>
+                                    <span class="badge bg-{% if resident[9] == 'Current Resident' %}success{% else %}warning{% endif %}">
+                                        {{ resident[9] }}
+                                    </span>
+                                </td>
+                                <td>{{ resident[10].strftime('%Y-%m-%d') if resident[10] else 'N/A' }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('edit_resident', resident_id=resident[0]) }}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Edit Resident">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('delete_resident', resident_id=resident[0]) }}" 
+                                           class="btn btn-sm btn-outline-danger delete-btn"
+                                           data-type="resident"
+                                           title="Delete Resident">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="row align-items-center">
+                    <div class="col-sm-6">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Showing {{ residents|length }} residents
+                        </small>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <small class="text-muted">
+                            <i class="fas fa-users me-1"></i>
+                            Total: {{ residents|length }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-users fa-4x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Residents Found</h5>
+                <p class="text-muted mb-4">Get started by adding your first resident to the system.</p>
+                <a href="{{ url_for('add_resident') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First Resident
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group .btn {
+    margin-right: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

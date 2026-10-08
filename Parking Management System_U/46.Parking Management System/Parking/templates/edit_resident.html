@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Resident{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-edit"></i> Edit Resident
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editResidentForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ resident[1] }}" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ resident[2] }}" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ resident[3] }}" required pattern="[0-9]{10}">
+                                    <div class="invalid-feedback"></div>
+                                    <small class="form-text text-muted">Enter 10-digit phone number</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ resident[5] }}" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="address" name="address" rows="3" required>{{ resident[4] }}</textarea>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" value="{{ resident[6] }}" required minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback"></div>
+                            <small class="form-text text-muted">Password must be at least 6 characters long</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" value="{{ resident[6] }}" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('manage_residents') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Resident
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editResidentForm');
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const phone = document.getElementById('phone');
+
+    // Toggle password visibility
+    togglePassword.addEventListener('click', function() {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    // Phone number formatting
+    phone.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 10) {
+            value = value.substring(0, 10);
+        }
+        e.target.value = value;
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Clear previous validation
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Name validation
+        const name = document.getElementById('name');
+        if (!name.value.trim()) {
+            name.classList.add('is-invalid');
+            name.nextElementSibling.textContent = 'Name is required';
+            isValid = false;
+        } else if (name.value.trim().length < 2) {
+            name.classList.add('is-invalid');
+            name.nextElementSibling.textContent = 'Name must be at least 2 characters';
+            isValid = false;
+        }
+
+        // Email validation
+        const email = document.getElementById('email');
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email.value)) {
+            email.classList.add('is-invalid');
+            email.nextElementSibling.textContent = 'Please enter a valid email address';
+            isValid = false;
+        }
+
+        // Phone validation
+        if (phone.value.length !== 10) {
+            phone.classList.add('is-invalid');
+            phone.nextElementSibling.textContent = 'Phone number must be 10 digits';
+            isValid = false;
+        }
+
+        // Username validation
+        const username = document.getElementById('username');
+        if (username.value.length < 3) {
+            username.classList.add('is-invalid');
+            username.nextElementSibling.textContent = 'Username must be at least 3 characters';
+            isValid = false;
+        }
+
+        // Address validation
+        const address = document.getElementById('address');
+        if (!address.value.trim()) {
+            address.classList.add('is-invalid');
+            address.nextElementSibling.textContent = 'Address is required';
+            isValid = false;
+        }
+
+        // Password validation
+        if (password.value.length < 6) {
+            password.classList.add('is-invalid');
+            password.parentElement.nextElementSibling.textContent = 'Password must be at least 6 characters';
+            isValid = false;
+        }
+
+        // Confirm password validation
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.classList.add('is-invalid');
+            confirmPassword.nextElementSibling.textContent = 'Passwords do not match';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

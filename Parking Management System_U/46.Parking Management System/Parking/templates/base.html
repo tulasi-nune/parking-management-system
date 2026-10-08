@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Modern Parking Management System with QR Code Integration">
+    <meta name="author" content="Parking Management System">
+    <title>{% block title %}Parking Management System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-parking"></i> Parking Management System</h1>
+                    <small>Modern • Secure • Efficient</small>
+                </div>
+                <div class="header-actions">
+                    {% if session.admin_logged_in %}
+                        <span class="text-light me-3">
+                            <i class="fas fa-user-shield"></i> Welcome, {{ session.admin_username }}
+                        </span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    {% elif session.resident_logged_in %}
+                        <span class="text-light me-3">
+                            <i class="fas fa-user"></i> Welcome, {{ session.resident_username }}
+                        </span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <ul class="nav-list">
+                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                
+                {% if session.admin_logged_in %}
+                    <li><a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('manage_residents') }}"><i class="fas fa-users"></i> Residents</a></li>
+                    <li><a href="{{ url_for('manage_vehicles') }}"><i class="fas fa-car"></i> Vehicles</a></li>
+                    <li><a href="{{ url_for('manage_parking') }}"><i class="fas fa-parking"></i> Parking</a></li>
+                    <li><a href="{{ url_for('gate_entry') }}"><i class="fas fa-qrcode"></i> Gate Entry</a></li>
+                    <li><a href="{{ url_for('complaints') }}"><i class="fas fa-comments"></i> Complaints</a></li>
+                    <li><a href="{{ url_for('manage_charges') }}"><i class="fas fa-credit-card"></i> Charges</a></li>
+                {% elif session.resident_logged_in %}
+                    <li><a href="{{ url_for('resident_dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('resident_vehicles') }}"><i class="fas fa-car"></i> My Vehicles</a></li>
+                    <li><a href="{{ url_for('resident_complaints') }}"><i class="fas fa-comment"></i> Complaints</a></li>
+                    <li><a href="{{ url_for('resident_charges') }}"><i class="fas fa-credit-card"></i> My Charges</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('admin_login') }}"><i class="fas fa-user-shield"></i> Admin Login</a></li>
+                    <li><a href="{{ url_for('resident_login') }}"><i class="fas fa-user"></i> Resident Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-parking"></i> Parking Management System</h5>
+                    <p class="mb-0">Modern parking management solution with QR code integration for secure and efficient vehicle access control.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h6>Features</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check"></i> QR Code Access</li>
+                        <li><i class="fas fa-check"></i> Real-time Monitoring</li>
+                        <li><i class="fas fa-check"></i> Automated Billing</li>
+                        <li><i class="fas fa-check"></i> Responsive Design</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-3">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 Parking Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/modals.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/form_validation.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Custom Scripts -->
+    <script>
+        // Add smooth scrolling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add fade-in animation to main content
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.classList.add('fade-in');
+            }
+            
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                });
+            });
+        });
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.remove();
+                }, 500);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

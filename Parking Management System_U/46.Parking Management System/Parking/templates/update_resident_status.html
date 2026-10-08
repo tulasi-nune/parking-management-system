@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Update Resident Status{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-edit"></i> Update Resident Status</h2>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Resident Status Management</h5>
+                    <small class="text-muted">Update residents between Current and Past status</small>
+                </div>
+                <div class="card-body">
+                    {% if residents %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="residentsTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Floor</th>
+                                        <th>Door</th>
+                                        <th>Current Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resident in residents %}
+                                    <tr data-resident-id="{{ resident[0] }}">
+                                        <td>{{ resident[1] }}</td>
+                                        <td>{{ resident[2] }}</td>
+                                        <td>{{ resident[3] }}</td>
+                                        <td>{{ resident[4] }}</td>
+                                        <td>{{ resident[6] or 'N/A' }}</td>
+                                        <td>{{ resident[7] or 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge {% if resident[8] == 'Current Resident' %}bg-success{% else %}bg-secondary{% endif %}" id="status-{{ resident[0] }}">
+                                                {{ resident[8] or 'Current Resident' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if resident[8] == 'Current Resident' or not resident[8] %}
+                                                <button class="btn btn-warning btn-sm" onclick="updateResidentStatus({{ resident[0] }}, 'Past Resident')" title="Mark as Past Resident">
+                                                    <i class="fas fa-user-times"></i> Mark as Past
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-success btn-sm" onclick="updateResidentStatus({{ resident[0] }}, 'Current Resident')" title="Mark as Current Resident">
+                                                    <i class="fas fa-user-check"></i> Mark as Current
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No residents found</h5>
+                            <p class="text-muted">Add residents first to manage their status.</p>
+                            <a href="{{ url_for('add_resident') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Resident
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Status Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentResidentId = null;
+let newStatus = null;
+
+function updateResidentStatus(residentId, status) {
+    currentResidentId = residentId;
+    newStatus = status;
+    
+    const residentRow = document.querySelector(`tr[data-resident-id="${residentId}"]`);
+    const residentName = residentRow.cells[0].textContent;
+    
+    document.getElementById('confirmMessage').textContent = 
+        `Are you sure you want to change ${residentName}'s status to "${status}"?`;
+    
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+document.getElementById('confirmBtn').addEventListener('click', function() {
+    if (!currentResidentId || !newStatus) return;
+    
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    
+    fetch(`/update_resident_status/${currentResidentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            location.reload(); // Reload to show updated status
+        } else {
+            alert('Error updating status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating status');
+    })
+    .finally(() => {
+        this.disabled = false;
+        this.innerHTML = 'Confirm';
+    });
+});
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search box
+    const cardHeader = document.querySelector('.card-header');
+    if (cardHeader) {
+        const searchDiv = document.createElement('div');
+        searchDiv.className = 'mt-2';
+        searchDiv.innerHTML = `
+            <input type="text" class="form-control" id="searchInput" placeholder="Search residents by name, username, or email...">
+        `;
+        cardHeader.appendChild(searchDiv);
+        
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#residentsTable tbody tr');
+            
+            rows.forEach(row => {
+                const cells = row.getElementsByTagName('td');
+                let match = false;
+                
+                // Search in name, username, and email columns
+                for (let i = 0; i < 3; i++) {
+                    if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+                        match = true;
+                        break;
+                    }
+                }
+                
+                row.style.display = match ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

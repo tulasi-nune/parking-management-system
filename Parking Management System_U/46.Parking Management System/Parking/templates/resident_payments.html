@@ -1,0 +1,690 @@
+{% extends "base.html" %}
+
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <h2><i class="fas fa-credit-card"></i> Payments</h2>
+                <p class="text-muted">Manage your parking payments and billing information.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 id="currentBalance">₹0</h4>
+                            <p class="mb-0">Current Balance</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-wallet fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 id="monthlyRate">₹500</h4>
+                            <p class="mb-0">Monthly Rate</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 id="pendingAmount">₹0</h4>
+                            <p class="mb-0">Pending Amount</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-primary w-100" onclick="showPaymentModal()" id="makePaymentBtn">
+                                <i class="fas fa-credit-card"></i><br>
+                                Make Payment
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-info w-100" onclick="viewBill()">
+                                <i class="fas fa-file-invoice"></i><br>
+                                View Bill
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-success w-100" onclick="downloadReceipt()">
+                                <i class="fas fa-download"></i><br>
+                                Download Receipt
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-warning w-100" id="autoPaymentBtn" onclick="setupAutoPayment()">
+                                <i class="fas fa-sync"></i><br>
+                                <span id="autoPaymentText">Auto Payment</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentHistoryTable">
+                                <!-- Payment history will be loaded here dynamically -->
+                                <tr id="loadingRow">
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2 mb-0">Loading payment history...</p>
+                                    </td>
+                                </tr>
+                                <!-- Empty state message -->
+                                <tr id="noPaymentsRow" style="display: none;">
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No payment history found.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Make Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <!-- Pending Payments Selection -->
+                    <div class="mb-3" id="pendingPaymentSection" style="display: none;">
+                        <label for="pendingPaymentSelect" class="form-label">Pending Payments</label>
+                        <select class="form-select" id="pendingPaymentSelect" onchange="selectPendingPayment()">
+                            <option value="">Select pending payment to pay</option>
+                        </select>
+                        <small class="text-muted">Select a pending payment or enter custom amount below</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" class="form-control" id="amount" name="amount" required min="1" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentType" class="form-label">Payment Type</label>
+                        <select class="form-select" id="paymentType" name="paymentType" required>
+                            <option value="">Select Payment Type</option>
+                            <option value="Monthly">Monthly Parking</option>
+                            <option value="Guest">Guest Parking</option>
+                            <option value="Penalty">Penalty</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">Payment Method</label>
+                        <select class="form-select" id="paymentMethod" name="paymentMethod" required>
+                            <option value="">Select Payment Method</option>
+                            <option value="Credit Card">Credit/Debit Card</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Net Banking">Net Banking</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Additional notes about the payment"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="processPayment()">
+                    <i class="fas fa-credit-card"></i> Pay Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Bill Modal -->
+<div class="modal fade" id="viewBillModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bill Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="billDetails">
+                <!-- Bill details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printBill()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto Payment Confirmation Modal -->
+<div class="modal fade" id="autoPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Auto Payment Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="autoPaymentMessage"></p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    When enabled, your monthly parking charges will be automatically processed on the due date.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="confirmAutoPayment()">
+                    <i class="fas fa-sync"></i> <span id="autoPaymentConfirmText">Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let paymentData = {};
+let currentBillId = null;
+let autoPaymentStatus = false;
+
+// Load payment data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadPaymentData();
+    
+    // Refresh data every 30 seconds for real-time updates
+    setInterval(loadPaymentData, 30000);
+    
+    // Add animation to action buttons
+    const actionButtons = document.querySelectorAll('.card-body .btn');
+    actionButtons.forEach((button, index) => {
+        button.style.opacity = '0';
+        button.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            button.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            button.style.opacity = '1';
+            button.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+function loadPaymentData() {
+    fetch('/api/resident_payment_data')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            paymentData = data.data;
+            updatePaymentSummary();
+            updatePaymentHistory();
+            updateAutoPaymentStatus();
+        } else {
+            console.error('Error loading payment data:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function updatePaymentSummary() {
+    document.getElementById('currentBalance').textContent = `₹${paymentData.current_balance.toFixed(2)}`;
+    document.getElementById('monthlyRate').textContent = `₹${paymentData.monthly_rate.toFixed(2)}`;
+    document.getElementById('pendingAmount').textContent = `₹${paymentData.pending_amount.toFixed(2)}`;
+}
+
+function updatePaymentHistory() {
+    const tableBody = document.getElementById('paymentHistoryTable');
+    const loadingRow = document.getElementById('loadingRow');
+    const noPaymentsRow = document.getElementById('noPaymentsRow');
+    
+    // Clear existing data
+    tableBody.innerHTML = '';
+    
+    if (paymentData.payment_history && paymentData.payment_history.length > 0) {
+        paymentData.payment_history.forEach(payment => {
+            const row = document.createElement('tr');
+            const statusBadge = payment.status === 'Completed' ? 
+                '<span class="badge bg-success">Paid</span>' : 
+                '<span class="badge bg-warning">Pending</span>';
+            
+            row.innerHTML = `
+                <td>${payment.date}</td>
+                <td>₹${payment.amount.toFixed(2)}</td>
+                <td>${payment.description}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="viewBill(${payment.id})" title="View Bill">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${payment.status === 'Completed' ? 
+                        `<button class="btn btn-sm btn-outline-success" onclick="downloadReceipt(${payment.id})" title="Download Receipt">
+                            <i class="fas fa-download"></i>
+                        </button>` : ''}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } else {
+        noPaymentsRow.style.display = '';
+        tableBody.appendChild(noPaymentsRow);
+    }
+}
+
+function updateAutoPaymentStatus() {
+    autoPaymentStatus = paymentData.auto_payment;
+    const autoPaymentBtn = document.getElementById('autoPaymentBtn');
+    const autoPaymentText = document.getElementById('autoPaymentText');
+    
+    if (autoPaymentStatus) {
+        autoPaymentBtn.classList.remove('btn-warning');
+        autoPaymentBtn.classList.add('btn-success');
+        autoPaymentText.textContent = 'Auto Pay: ON';
+    } else {
+        autoPaymentBtn.classList.remove('btn-success');
+        autoPaymentBtn.classList.add('btn-warning');
+        autoPaymentText.textContent = 'Auto Payment';
+    }
+}
+
+function showPaymentModal() {
+    // Load pending payments first
+    fetch('/api/get_pending_payments')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.pending_payments.length > 0) {
+            // Show pending payments selection
+            const pendingPaymentsHtml = data.pending_payments.map(payment => 
+                `<option value="${payment.id}" data-amount="${payment.amount}">
+                    ${payment.description} - ₹${payment.amount.toFixed(2)} (Due: ${payment.due_date})
+                </option>`
+            ).join('');
+            
+            document.getElementById('pendingPaymentSelect').innerHTML = 
+                '<option value="">Select pending payment to pay</option>' + pendingPaymentsHtml;
+            document.getElementById('pendingPaymentSection').style.display = 'block';
+            
+            // Auto-fill with first pending payment
+            if (data.pending_payments.length > 0) {
+                const firstPending = data.pending_payments[0];
+                document.getElementById('amount').value = firstPending.amount.toFixed(2);
+                document.getElementById('paymentType').value = firstPending.type;
+            }
+        } else {
+            document.getElementById('pendingPaymentSection').style.display = 'none';
+            document.getElementById('amount').value = '';
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error loading pending payments:', error);
+        // Show modal anyway
+        document.getElementById('pendingPaymentSection').style.display = 'none';
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+    });
+}
+
+function selectPendingPayment() {
+    const select = document.getElementById('pendingPaymentSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        const amount = selectedOption.getAttribute('data-amount');
+        document.getElementById('amount').value = parseFloat(amount).toFixed(2);
+        
+        // Try to determine payment type from description
+        const description = selectedOption.textContent.toLowerCase();
+        if (description.includes('monthly')) {
+            document.getElementById('paymentType').value = 'Monthly';
+        } else if (description.includes('guest')) {
+            document.getElementById('paymentType').value = 'Guest';
+        } else if (description.includes('penalty')) {
+            document.getElementById('paymentType').value = 'Penalty';
+        }
+    } else {
+        document.getElementById('amount').value = '';
+        document.getElementById('paymentType').value = '';
+    }
+}
+
+function processPayment() {
+    const form = document.getElementById('paymentForm');
+    const amount = document.getElementById('amount').value;
+    const paymentType = document.getElementById('paymentType').value;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const notes = document.getElementById('notes').value;
+    const pendingPaymentSelect = document.getElementById('pendingPaymentSelect');
+    const selectedPaymentId = pendingPaymentSelect.value || null;
+    
+    if (!amount || !paymentType || !paymentMethod) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    if (parseFloat(amount) <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#paymentModal .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
+    
+    // Process payment via API
+    const paymentData = {
+        amount: parseFloat(amount),
+        payment_type: paymentType,
+        payment_method: paymentMethod,
+        description: notes || `${paymentType} payment via ${paymentMethod}`
+    };
+    
+    // Add payment ID if paying a specific pending payment
+    if (selectedPaymentId) {
+        paymentData.payment_id = parseInt(selectedPaymentId);
+    }
+    
+    fetch('/api/process_payment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+            modal.hide();
+            
+            // Reset form
+            form.reset();
+            document.getElementById('pendingPaymentSelect').value = '';
+            
+            // Show success message
+            setTimeout(() => {
+                alert('Payment processed successfully!');
+                loadPaymentData(); // Refresh data
+            }, 500);
+        } else {
+            alert('Payment failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Payment processing error. Please try again.');
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function viewBill(paymentId = null) {
+    if (!paymentId && paymentData.payment_history && paymentData.payment_history.length > 0) {
+        // If no specific payment ID, show the most recent pending payment
+        const pendingPayment = paymentData.payment_history.find(p => p.status === 'Pending');
+        paymentId = pendingPayment ? pendingPayment.id : paymentData.payment_history[0].id;
+    }
+    
+    if (!paymentId) {
+        alert('No bills available to view');
+        return;
+    }
+    
+    currentBillId = paymentId;
+    
+    fetch(`/api/view_bill/${paymentId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayBillDetails(data.bill);
+            const modal = new bootstrap.Modal(document.getElementById('viewBillModal'));
+            modal.show();
+        } else {
+            alert('Error loading bill: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading bill');
+    });
+}
+
+function displayBillDetails(bill) {
+    const billDetails = document.getElementById('billDetails');
+    billDetails.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Bill Information</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Bill ID:</strong></td><td>BILL-${bill.id.toString().padStart(6, '0')}</td></tr>
+                    <tr><td><strong>Amount:</strong></td><td>₹${bill.amount.toFixed(2)}</td></tr>
+                    <tr><td><strong>Description:</strong></td><td>${bill.description}</td></tr>
+                    <tr><td><strong>Status:</strong></td><td>
+                        ${bill.status === 'Completed' ? 
+                            '<span class="badge bg-success">Paid</span>' : 
+                            '<span class="badge bg-warning">Pending</span>'}
+                    </td></tr>
+                    <tr><td><strong>Due Date:</strong></td><td>${bill.due_date}</td></tr>
+                    ${bill.payment_date !== 'Not paid' ? 
+                        `<tr><td><strong>Payment Date:</strong></td><td>${bill.payment_date}</td></tr>` : ''}
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Resident Information</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Name:</strong></td><td>${bill.resident_name}</td></tr>
+                    <tr><td><strong>Email:</strong></td><td>${bill.resident_email}</td></tr>
+                    <tr><td><strong>Phone:</strong></td><td>${bill.resident_phone}</td></tr>
+                    <tr><td><strong>Location:</strong></td><td>${bill.resident_location}</td></tr>
+                    <tr><td><strong>Slot No:</strong></td><td>${bill.slot_no}</td></tr>
+                    <tr><td><strong>Vehicle:</strong></td><td>${bill.vehicle_no} (${bill.vehicle_type})</td></tr>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function downloadReceipt(paymentId = null) {
+    if (!paymentId && paymentData.payment_history && paymentData.payment_history.length > 0) {
+        // If no specific payment ID, use the most recent completed payment
+        const completedPayment = paymentData.payment_history.find(p => p.status === 'Completed');
+        paymentId = completedPayment ? completedPayment.id : null;
+    }
+    
+    if (!paymentId) {
+        alert('No completed payments available for receipt download');
+        return;
+    }
+    
+    fetch(`/api/download_receipt/${paymentId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Create a downloadable receipt (simplified version)
+            const receipt = data.receipt;
+            const receiptContent = `
+PARKING MANAGEMENT SYSTEM
+Payment Receipt
+--------------------------
+Receipt ID: ${receipt.receipt_id}
+Date: ${receipt.payment_date}
+--------------------------
+Resident: ${receipt.resident_name}
+Location: ${receipt.resident_location}
+Parking Slot: ${receipt.slot_no} (${receipt.slot_type})
+Vehicle: ${receipt.vehicle_no} (${receipt.vehicle_type})
+--------------------------
+Description: ${receipt.description}
+Amount: ₹${receipt.amount.toFixed(2)}
+Payment Method: ${receipt.payment_method}
+--------------------------
+Thank you for your payment!
+            `;
+            
+            // Create and download the receipt
+            const blob = new Blob([receiptContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Receipt_${receipt.receipt_id}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Receipt downloaded successfully!');
+        } else {
+            alert('Error downloading receipt: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error downloading receipt');
+    });
+}
+
+function setupAutoPayment() {
+    const message = autoPaymentStatus ? 
+        'Are you sure you want to disable auto payment?' : 
+        'Are you sure you want to enable auto payment?';
+    const confirmText = autoPaymentStatus ? 'Disable' : 'Enable';
+    
+    document.getElementById('autoPaymentMessage').textContent = message;
+    document.getElementById('autoPaymentConfirmText').textContent = confirmText;
+    
+    const modal = new bootstrap.Modal(document.getElementById('autoPaymentModal'));
+    modal.show();
+}
+
+function confirmAutoPayment() {
+    fetch('/api/toggle_auto_payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('autoPaymentModal')).hide();
+            alert(data.message);
+            autoPaymentStatus = data.auto_payment;
+            updateAutoPaymentStatus();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating auto payment settings');
+    });
+}
+
+function printBill() {
+    window.print();
+}
+</script>
+
+<style>
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.table-hover tbody tr:hover {
+    transform: scale(1.01);
+    transition: transform 0.2s ease;
+}
+</style>
+{% endblock %}

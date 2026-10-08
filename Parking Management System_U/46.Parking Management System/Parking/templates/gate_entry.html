@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Gate Entry Scanner - Parking Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .video-container {
+        position: relative;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    
+    .scanner-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 250px;
+        height: 250px;
+        border: 2px solid #fff;
+        border-radius: 12px;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+        pointer-events: none;
+    }
+    
+    .scanner-overlay::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid #007bff;
+        border-radius: 12px;
+        animation: scannerPulse 2s infinite;
+    }
+    
+    @keyframes scannerPulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+    
+    .scanner-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(to right, transparent, #007bff, transparent);
+        animation: scannerLine 2s infinite;
+    }
+    
+    @keyframes scannerLine {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
+    
+    .log-type-selector {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .log-type-selector .form-check {
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-type-selector .form-check-input:checked {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .status-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+    
+    .status-indicator.scanning {
+        background: rgba(0,123,255,0.9);
+    }
+    
+    .status-indicator.processing {
+        background: rgba(255,193,7,0.9);
+    }
+    
+    .status-indicator.success {
+        background: rgba(40,167,69,0.9);
+    }
+    
+    .status-indicator.error {
+        background: rgba(220,53,69,0.9);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="text-center mb-4">
+                <h2 class="display-6 fw-bold">
+                    <i class="fas fa-qrcode me-2"></i>QR Code Gate Entry Scanner
+                </h2>
+                <p class="lead text-muted">Scan QR codes for vehicle entry and exit</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="scanner-container">
+        <!-- Log Type Selector -->
+        <div class="log-type-selector">
+            <h6 class="mb-3">
+                <i class="fas fa-toggle-on me-2"></i>Select Entry Type
+            </h6>
+            <div class="row">
+                <div class="col-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="log_type" id="entry" value="ENTRY" checked>
+                        <label class="form-check-label" for="entry">
+                            <i class="fas fa-sign-in-alt me-2 text-success"></i>Vehicle Entry
+                        </label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="log_type" id="exit" value="EXIT">
+                        <label class="form-check-label" for="exit">
+                            <i class="fas fa-sign-out-alt me-2 text-danger"></i>Vehicle Exit
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scanner Video -->
+        <div class="video-container">
+            <video id="qr-scanner-video" autoplay playsinline class="w-100"></video>
+            <div class="scanner-overlay">
+                <div class="scanner-line"></div>
+            </div>
+            <div class="status-indicator scanning" id="scanner-status">
+                <i class="fas fa-camera me-2"></i>Scanning...
+            </div>
+        </div>
+
+        <!-- Hidden Canvas for QR Processing -->
+        <canvas id="qr-canvas" style="display: none;"></canvas>
+
+        <!-- Control Buttons -->
+        <div class="text-center mt-3">
+            <button id="clear-scan-btn" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-2"></i>Clear Scan
+            </button>
+        </div>
+    </div>
+
+    <!-- Scan Result Card -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <div id="scanned-info-card" class="card d-none">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>Instructions
+                    </h6>
+                    <ul class="mb-0 small text-muted">
+                        <li>Select whether the vehicle is entering or exiting</li>
+                        <li>Hold the QR code steady in front of the camera</li>
+                        <li>Ensure good lighting for better scanning</li>
+                        <li>The system will automatically process valid QR codes</li>
+                        <li>For guest parking exits, the parking slot will be automatically freed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-3">
+        <a href="{{ url_for('gate_logs') }}" class="btn btn-primary">
+            <i class="fas fa-list"></i> View Gate Logs
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jsQR Library -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<!-- Gate Entry Scanner Script -->
+<script src="{{ url_for('static', filename='js/gate_entry.js') }}"></script>
+
+<script>
+// Additional functionality for status updates
+document.addEventListener('DOMContentLoaded', function() {
+    const statusIndicator = document.getElementById('scanner-status');
+    
+    // Update status indicator based on scanner state
+    function updateScannerStatus(status, message, icon) {
+        statusIndicator.className = `status-indicator ${status}`;
+        statusIndicator.innerHTML = `<i class="fas ${icon} me-2"></i>${message}`;
+    }
+    
+    // Permission handling
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            updateScannerStatus('scanning', 'Scanning...', 'fa-camera');
+        })
+        .catch(error => {
+            updateScannerStatus('error', 'Camera access denied', 'fa-exclamation-triangle');
+            document.querySelector('.video-container').innerHTML = `
+                <div class="text-center p-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5>Camera Access Required</h5>
+                    <p class="text-muted">Please allow camera access to use the QR scanner.</p>
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="fas fa-refresh me-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+    
+    // Handle scanner events
+    window.addEventListener('qr-scan-start', () => {
+        updateScannerStatus('processing', 'Processing QR Code...', 'fa-spinner fa-spin');
+    });
+    
+    window.addEventListener('qr-scan-success', () => {
+        updateScannerStatus('success', 'QR Code Processed', 'fa-check');
+        setTimeout(() => {
+            updateScannerStatus('scanning', 'Scanning...', 'fa-camera');
+        }, 3000);
+    });
+    
+    window.addEventListener('qr-scan-error', () => {
+        updateScannerStatus('error', 'Invalid QR Code', 'fa-times');
+        setTimeout(() => {
+            updateScannerStatus('scanning', 'Scanning...', 'fa-camera');
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

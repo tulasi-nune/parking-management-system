@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Vehicle{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-car"></i> Edit Vehicle
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editVehicleForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vehicle_no" class="form-label">Vehicle Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="vehicle_no" name="vehicle_no" value="{{ vehicle[1] }}" required style="text-transform: uppercase;" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                    <small class="form-text text-muted">Enter your vehicle number (e.g., AB01CD1234, GJ05AB1234, TS08GX2337, etc.)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vehicle_type" class="form-label">Vehicle Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                                        <option value="">Select Vehicle Type</option>
+                                        <option value="Car" {% if vehicle[2] == 'Car' %}selected{% endif %}>Car</option>
+                                        <option value="Bike" {% if vehicle[2] == 'Bike' %}selected{% endif %}>Bike</option>
+                                        <option value="Scooter" {% if vehicle[2] == 'Scooter' %}selected{% endif %}>Scooter</option>
+                                        <option value="SUV" {% if vehicle[2] == 'SUV' %}selected{% endif %}>SUV</option>
+                                        <option value="Van" {% if vehicle[2] == 'Van' %}selected{% endif %}>Van</option>
+                                        <option value="Truck" {% if vehicle[2] == 'Truck' %}selected{% endif %}>Truck</option>
+                                        <option value="Bus" {% if vehicle[2] == 'Bus' %}selected{% endif %}>Bus</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vehicle_company" class="form-label">Vehicle Company <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="vehicle_company" name="vehicle_company" value="{{ vehicle[3] }}" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vehicle_color" class="form-label">Vehicle Color <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="vehicle_color" name="vehicle_color" required>
+                                        <option value="">Select Color</option>
+                                        <option value="Red" {% if vehicle[4] == 'Red' %}selected{% endif %}>Red</option>
+                                        <option value="Blue" {% if vehicle[4] == 'Blue' %}selected{% endif %}>Blue</option>
+                                        <option value="Green" {% if vehicle[4] == 'Green' %}selected{% endif %}>Green</option>
+                                        <option value="Yellow" {% if vehicle[4] == 'Yellow' %}selected{% endif %}>Yellow</option>
+                                        <option value="Orange" {% if vehicle[4] == 'Orange' %}selected{% endif %}>Orange</option>
+                                        <option value="Purple" {% if vehicle[4] == 'Purple' %}selected{% endif %}>Purple</option>
+                                        <option value="Pink" {% if vehicle[4] == 'Pink' %}selected{% endif %}>Pink</option>
+                                        <option value="Brown" {% if vehicle[4] == 'Brown' %}selected{% endif %}>Brown</option>
+                                        <option value="Black" {% if vehicle[4] == 'Black' %}selected{% endif %}>Black</option>
+                                        <option value="White" {% if vehicle[4] == 'White' %}selected{% endif %}>White</option>
+                                        <option value="Gray" {% if vehicle[4] == 'Gray' %}selected{% endif %}>Gray</option>
+                                        <option value="Silver" {% if vehicle[4] == 'Silver' %}selected{% endif %}>Silver</option>
+                                        <option value="Gold" {% if vehicle[4] == 'Gold' %}selected{% endif %}>Gold</option>
+                                        <option value="Maroon" {% if vehicle[4] == 'Maroon' %}selected{% endif %}>Maroon</option>
+                                        <option value="Navy" {% if vehicle[4] == 'Navy' %}selected{% endif %}>Navy</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="resident_id" class="form-label">Owner <span class="text-danger">*</span></label>
+                            <select class="form-select" id="resident_id" name="resident_id" required>
+                                <option value="">Select Owner</option>
+                                {% for resident in residents %}
+                                <option value="{{ resident[0] }}" {% if resident[0] == vehicle[5] %}selected{% endif %}>{{ resident[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('manage_vehicles') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Vehicle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editVehicleForm');
+    const vehicleNo = document.getElementById('vehicle_no');
+    const vehicleType = document.getElementById('vehicle_type');
+    const vehicleCompany = document.getElementById('vehicle_company');
+    const vehicleColor = document.getElementById('vehicle_color');
+
+    // Vehicle number formatting
+    vehicleNo.addEventListener('input', function(e) {
+        let value = e.target.value.toUpperCase();
+        // Allow alphanumeric characters and spaces/dashes for formatting
+        value = value.replace(/[^A-Z0-9\s\-]/g, '');
+        e.target.value = value;
+        
+        // Real-time validation feedback
+        if (value.length >= 3) {
+            e.target.classList.remove('is-invalid');
+            e.target.classList.add('is-valid');
+        } else {
+            e.target.classList.remove('is-valid');
+        }
+    });
+
+    // Vehicle type change handler
+    vehicleType.addEventListener('change', function() {
+        const type = this.value;
+        const companyInput = document.getElementById('vehicle_company');
+        
+        // Add suggestions based on vehicle type
+        if (type === 'Car' || type === 'SUV') {
+            companyInput.setAttribute('list', 'carCompanies');
+        } else if (type === 'Bike' || type === 'Scooter') {
+            companyInput.setAttribute('list', 'bikeCompanies');
+        } else {
+            companyInput.removeAttribute('list');
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Clear previous validation
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Vehicle number validation
+        const vehicleNoValue = vehicleNo.value.trim();
+        if (vehicleNoValue.length < 3) {
+            vehicleNo.classList.add('is-invalid');
+            vehicleNo.nextElementSibling.textContent = 'Vehicle number must be at least 3 characters';
+            isValid = false;
+        } else if (vehicleNoValue.length > 20) {
+            vehicleNo.classList.add('is-invalid');
+            vehicleNo.nextElementSibling.textContent = 'Vehicle number cannot exceed 20 characters';
+            isValid = false;
+        } else if (!/^[A-Z0-9\s\-]+$/.test(vehicleNoValue)) {
+            vehicleNo.classList.add('is-invalid');
+            vehicleNo.nextElementSibling.textContent = 'Vehicle number can only contain letters, numbers, spaces, and hyphens';
+            isValid = false;
+        }
+
+        // Vehicle type validation
+        if (!vehicleType.value) {
+            vehicleType.classList.add('is-invalid');
+            vehicleType.nextElementSibling.textContent = 'Please select a vehicle type';
+            isValid = false;
+        }
+
+        // Vehicle company validation
+        if (!vehicleCompany.value.trim()) {
+            vehicleCompany.classList.add('is-invalid');
+            vehicleCompany.nextElementSibling.textContent = 'Vehicle company is required';
+            isValid = false;
+        }
+
+        // Vehicle color validation
+        if (!vehicleColor.value) {
+            vehicleColor.classList.add('is-invalid');
+            vehicleColor.nextElementSibling.textContent = 'Please select a vehicle color';
+            isValid = false;
+        }
+
+        // Resident selection validation
+        const residentId = document.getElementById('resident_id');
+        if (!residentId.value) {
+            residentId.classList.add('is-invalid');
+            residentId.nextElementSibling.textContent = 'Please select an owner';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+
+<!-- Data lists for auto-suggestions -->
+<datalist id="carCompanies">
+    <option value="Maruti Suzuki">
+    <option value="Hyundai">
+    <option value="Tata Motors">
+    <option value="Honda">
+    <option value="Toyota">
+    <option value="Ford">
+    <option value="Mahindra">
+    <option value="Volkswagen">
+    <option value="BMW">
+    <option value="Mercedes-Benz">
+    <option value="Audi">
+    <option value="Nissan">
+    <option value="Renault">
+    <option value="Skoda">
+    <option value="Chevrolet">
+</datalist>
+
+<datalist id="bikeCompanies">
+    <option value="Hero MotoCorp">
+    <option value="Honda">
+    <option value="Bajaj">
+    <option value="TVS">
+    <option value="Yamaha">
+    <option value="Royal Enfield">
+    <option value="Suzuki">
+    <option value="KTM">
+    <option value="Harley Davidson">
+    <option value="Ducati">
+    <option value="Kawasaki">
+    <option value="Triumph">
+    <option value="Aprilia">
+    <option value="Benelli">
+    <option value="Mahindra">
+</datalist>
+{% endblock %}

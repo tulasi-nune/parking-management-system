@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Parking Slot{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-parking"></i> Edit Parking Slot
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editParkingForm">
+                        <div class="mb-3">
+                            <label for="slot_no" class="form-label">Slot Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="slot_no" name="slot_no" value="{{ slot[1] }}" required>
+                            <div class="invalid-feedback"></div>
+                            <small class="form-text text-muted">e.g., A-001, B-025, etc.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ slot[2] }}" required>
+                            <div class="invalid-feedback"></div>
+                            <small class="form-text text-muted">e.g., Ground Floor, First Floor, Block A, etc.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="slot_type" class="form-label">Slot Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="slot_type" name="slot_type" required>
+                                <option value="">Select Slot Type</option>
+                                <option value="Car" {% if slot[4] == 'Car' %}selected{% endif %}>Car</option>
+                                <option value="Bike" {% if slot[4] == 'Bike' %}selected{% endif %}>Bike</option>
+                                <option value="SUV" {% if slot[4] == 'SUV' %}selected{% endif %}>SUV</option>
+                                <option value="Handicapped" {% if slot[4] == 'Handicapped' %}selected{% endif %}>Handicapped</option>
+                                <option value="Electric Vehicle" {% if slot[4] == 'Electric Vehicle' %}selected{% endif %}>Electric Vehicle</option>
+                                <option value="Visitor" {% if slot[4] == 'Visitor' %}selected{% endif %}>Visitor</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="Available" {% if slot[3] == 'Available' %}selected{% endif %}>Available</option>
+                                <option value="Occupied" {% if slot[3] == 'Occupied' %}selected{% endif %}>Occupied</option>
+                                <option value="Maintenance" {% if slot[3] == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('manage_parking') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Slot
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editParkingForm');
+    const slotNo = document.getElementById('slot_no');
+    const location = document.getElementById('location');
+    const slotType = document.getElementById('slot_type');
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Clear previous validation
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Slot number validation
+        if (!slotNo.value.trim()) {
+            slotNo.classList.add('is-invalid');
+            slotNo.nextElementSibling.textContent = 'Slot number is required';
+            isValid = false;
+        } else if (slotNo.value.trim().length < 3) {
+            slotNo.classList.add('is-invalid');
+            slotNo.nextElementSibling.textContent = 'Slot number must be at least 3 characters';
+            isValid = false;
+        }
+
+        // Location validation
+        if (!location.value.trim()) {
+            location.classList.add('is-invalid');
+            location.nextElementSibling.textContent = 'Location is required';
+            isValid = false;
+        }
+
+        // Slot type validation
+        if (!slotType.value) {
+            slotType.classList.add('is-invalid');
+            slotType.nextElementSibling.textContent = 'Please select a slot type';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+
+    // Auto-format slot number
+    slotNo.addEventListener('input', function(e) {
+        let value = e.target.value.toUpperCase();
+        // Remove invalid characters
+        value = value.replace(/[^A-Z0-9-]/g, '');
+        e.target.value = value;
+    });
+});
+</script>
+{% endblock %}

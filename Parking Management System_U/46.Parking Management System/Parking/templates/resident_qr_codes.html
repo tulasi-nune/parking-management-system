@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}My QR Codes{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <h2><i class="fas fa-qrcode"></i> My QR Codes</h2>
+                <p class="text-muted">Generate and download QR codes for your vehicles. Show these at the gate for entry/exit.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% if vehicles %}
+            {% for vehicle in vehicles %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card qr-card">
+                    <div class="card-body text-center">
+                        <div class="qr-placeholder mb-3" id="qr-container-{{ vehicle[0] }}">
+                            <i class="fas fa-qrcode fa-3x text-muted"></i>
+                            <p class="text-muted mt-2">Click to generate QR code</p>
+                        </div>
+                        
+                        <h5 class="card-title">{{ vehicle[1] }}</h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary">{{ vehicle[2] }}</span>
+                            <span class="badge bg-secondary">{{ vehicle[3] }}</span>
+                        </p>
+                        
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-success" onclick="generateQR('{{ vehicle[1] }}', {{ vehicle[0] }})">
+                                <i class="fas fa-qrcode"></i> Generate QR
+                            </button>
+                            <button class="btn btn-primary" onclick="downloadQR('{{ vehicle[1] }}', {{ vehicle[0] }})" disabled id="download-btn-{{ vehicle[0] }}">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No vehicles registered</h4>
+                    <p class="text-muted">Add your vehicles first to generate QR codes.</p>
+                    <a href="{{ url_for('resident_add_vehicle') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Vehicle
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if vehicles %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> How to Use QR Codes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-mobile-alt fa-2x text-primary mb-2"></i>
+                                <h6>Step 1</h6>
+                                <p class="text-muted">Generate and download QR code for your vehicle</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-car fa-2x text-success mb-2"></i>
+                                <h6>Step 2</h6>
+                                <p class="text-muted">Keep the QR code on your phone or print it</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-door-open fa-2x text-info mb-2"></i>
+                                <h6>Step 3</h6>
+                                <p class="text-muted">Show QR code at the gate for automatic entry/exit</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function generateQR(vehicleNo, vehicleId) {
+    const container = document.getElementById(`qr-container-${vehicleId}`);
+    const downloadBtn = document.getElementById(`download-btn-${vehicleId}`);
+    
+    // Show loading state
+    container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    
+    // Get resident ID from session or use a data attribute
+    const residentId = {{ session.resident_id if session.resident_id else 'null' }};
+    
+    if (!residentId) {
+        container.innerHTML = '<div class="alert alert-danger">Unable to generate QR code. Please login again.</div>';
+        return;
+    }
+    
+    // Generate comprehensive QR code with all resident details
+    fetch(`/generate_resident_qr/${residentId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                container.innerHTML = `
+                    <img src="${data.qr_code}" alt="QR Code" class="img-fluid qr-code" style="max-width: 150px;">
+                    <small class="text-muted d-block mt-2">Vehicle: ${data.qr_data}</small>
+                `;
+                downloadBtn.disabled = false;
+                
+                // Store QR data for download
+                downloadBtn.setAttribute('data-qr-src', data.qr_code);
+                downloadBtn.setAttribute('data-vehicle-no', data.qr_data);
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error generating QR code:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error generating QR code</div>';
+        });
+}
+
+function downloadQR(vehicleNo, vehicleId) {
+    const downloadBtn = document.getElementById(`download-btn-${vehicleId}`);
+    const qrSrc = downloadBtn.getAttribute('data-qr-src');
+    const vehicleNumber = downloadBtn.getAttribute('data-vehicle-no');
+    
+    if (qrSrc) {
+        const link = document.createElement('a');
+        link.download = `${vehicleNumber}_resident_qr_code.png`;
+        link.href = qrSrc;
+        link.click();
+    }
+}
+
+// Add animation to QR cards
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.qr-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+});
+</script>
+
+<style>
+.qr-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.qr-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.qr-placeholder {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.qr-placeholder:hover {
+    border-color: #007bff;
+}
+
+.qr-code {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+    background: white;
+}
+</style>
+{% endblock %}

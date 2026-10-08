@@ -1,0 +1,191 @@
+CREATE DATABASE IF NOT EXISTS parking_db;
+USE parking_db;
+
+-- Admin table
+CREATE TABLE IF NOT EXISTS admin (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    contact_no VARCHAR(15),
+    email VARCHAR(100),
+    address VARCHAR(200)
+);
+
+-- Insert default admin user
+INSERT IGNORE INTO admin (username, password, contact_no, email, address) 
+VALUES ('admin', 'admin', '9998887776', 'admin@gmail.com', 'India');
+
+-- Resident table
+CREATE TABLE IF NOT EXISTS resident (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(15) NOT NULL,
+    address TEXT NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    floor VARCHAR(50) NOT NULL,
+    door_number VARCHAR(50) NOT NULL,
+    status ENUM('Current Resident', 'Past Resident') DEFAULT 'Current Resident',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add auto_payment column to resident table if not exists
+ALTER TABLE resident ADD COLUMN IF NOT EXISTS auto_payment BOOLEAN DEFAULT FALSE;
+
+-- Vehicle table
+CREATE TABLE IF NOT EXISTS vehicle (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_no VARCHAR(20) UNIQUE NOT NULL,
+    vehicle_type VARCHAR(20) NOT NULL,
+    vehicle_company VARCHAR(50) NOT NULL,
+    vehicle_color VARCHAR(20) NOT NULL,
+    resident_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (resident_id) REFERENCES resident(id) ON DELETE CASCADE
+);
+
+-- Parking slots table
+CREATE TABLE IF NOT EXISTS parking (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    slot_no VARCHAR(20) UNIQUE NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    status ENUM('Available', 'Occupied', 'Maintenance') DEFAULT 'Available',
+    slot_type VARCHAR(30) NOT NULL,
+    vehicle_no VARCHAR(20) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_no) REFERENCES vehicle(vehicle_no) ON DELETE SET NULL
+);
+
+-- Add 3 parking slots for each vehicle type
+INSERT IGNORE INTO parking (slot_no, location, slot_type) VALUES
+('C-101', 'Basement 1', 'Car'),
+('C-102', 'Basement 1', 'Car'),
+('C-103', 'Basement 2', 'Car'),
+('S-201', 'Basement 2', 'SUV'),
+('S-202', 'Basement 2', 'SUV'),
+('S-203', 'Basement 3', 'SUV'),
+('B-301', 'Ground Floor', 'Bike'),
+('B-302', 'Ground Floor', 'Bike'),
+('B-303', 'Ground Floor', 'Bike'),
+('H-401', 'Ground Floor', 'Handicapped'),
+('H-402', 'Ground Floor', 'Handicapped'),
+('H-403', 'Ground Floor', 'Handicapped'),
+('V-501', 'Visitor Area', 'Visitor'),
+('V-502', 'Visitor Area', 'Visitor'),
+('V-503', 'Visitor Area', 'Visitor');
+
+-- Gate log table for entry/exit tracking
+CREATE TABLE IF NOT EXISTS gatelog (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_no VARCHAR(20) NOT NULL,
+    entry_time TIMESTAMP NULL,
+    exit_time TIMESTAMP NULL,
+    status ENUM('Entered', 'Exited') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_no) REFERENCES vehicle(vehicle_no) ON DELETE CASCADE
+);
+
+-- Complaints table
+CREATE TABLE IF NOT EXISTS complaints (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    resident_id INT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    complaint_text TEXT NOT NULL,
+    complaint_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('Pending', 'In Progress', 'Resolved') DEFAULT 'Pending',
+    admin_response TEXT NULL,
+    FOREIGN KEY (resident_id) REFERENCES resident(id) ON DELETE CASCADE
+);
+
+-- Billing/Payment table
+CREATE TABLE IF NOT EXISTS payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    resident_id INT NOT NULL,
+    parking_slot_id INT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    description TEXT NULL,
+    payment_type ENUM('Monthly', 'Guest', 'Penalty', 'Other') NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    due_date DATE NULL,
+    status ENUM('Pending', 'Completed', 'Failed', 'Not Assigned') DEFAULT 'Not Assigned',
+    notes TEXT NULL,
+    FOREIGN KEY (resident_id) REFERENCES resident(id) ON DELETE CASCADE,
+    FOREIGN KEY (parking_slot_id) REFERENCES parking(id) ON DELETE SET NULL
+);
+
+-- Charges allocation table
+CREATE TABLE IF NOT EXISTS charges (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    slot_type VARCHAR(30) NOT NULL,
+    vehicle_type VARCHAR(20) NOT NULL,
+    monthly_charge DECIMAL(10,2) NOT NULL,
+    guest_charge_per_day DECIMAL(10,2) NOT NULL,
+    penalty_charge DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_slot_vehicle (slot_type, vehicle_type)
+);
+
+-- Insert default charges for different combinations
+INSERT IGNORE INTO charges (slot_type, vehicle_type, monthly_charge, guest_charge_per_day, penalty_charge) VALUES
+('Car', 'Car', 2000.00, 100.00, 500.00),
+('Car', 'Sedan', 2000.00, 100.00, 500.00),
+('Car', 'Hatchback', 1800.00, 80.00, 400.00),
+('SUV', 'SUV', 2500.00, 150.00, 600.00),
+('SUV', 'Car', 2300.00, 120.00, 550.00),
+('Bike', 'Bike', 500.00, 30.00, 200.00),
+('Bike', 'Scooter', 500.00, 30.00, 200.00),
+('Bike', 'Motorcycle', 600.00, 40.00, 250.00),
+('Handicapped', 'Car', 1500.00, 80.00, 300.00),
+('Handicapped', 'SUV', 1800.00, 100.00, 400.00),
+('Visitor', 'Car', 0.00, 150.00, 500.00),
+('Visitor', 'SUV', 0.00, 200.00, 600.00),
+('Visitor', 'Bike', 0.00, 50.00, 200.00);
+
+-- Views for project
+CREATE OR REPLACE VIEW parking_overview AS
+SELECT 
+    p.id,
+    p.slot_no,
+    p.location,
+    p.slot_type,
+    p.status,
+    p.vehicle_no,
+    v.vehicle_type,
+    v.vehicle_company,
+    v.vehicle_color,
+    r.name as resident_name,
+    r.username as resident_username,
+    r.phone as resident_phone
+FROM parking p
+LEFT JOIN vehicle v ON p.vehicle_no = v.vehicle_no
+LEFT JOIN resident r ON v.resident_id = r.id;
+
+CREATE OR REPLACE VIEW resident_charges_view AS
+SELECT 
+    r.id as resident_id,
+    r.name,
+    r.username,
+    r.floor,
+    r.door_number,
+    p.id as parking_id,
+    p.slot_no,
+    p.slot_type,
+    v.vehicle_no,
+    v.vehicle_type,
+    c.monthly_charge,
+    py.id as payment_id,
+    py.amount as payment_amount,
+    py.status as payment_status,
+    py.due_date,
+    py.payment_date
+FROM resident r
+LEFT JOIN vehicle v ON r.id = v.resident_id
+LEFT JOIN parking p ON v.vehicle_no = p.vehicle_no AND p.status = 'Occupied'
+LEFT JOIN charges c ON p.slot_type = c.slot_type AND v.vehicle_type = c.vehicle_type
+LEFT JOIN payments py ON r.id = py.resident_id AND py.parking_slot_id = p.id 
+    AND py.payment_type = 'Monthly' AND py.status IN ('Pending', 'Not Assigned')
+WHERE r.status = 'Current Resident'
+ORDER BY r.name;

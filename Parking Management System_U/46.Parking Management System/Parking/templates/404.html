@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center">
+                <div class="error-page">
+                    <h1 class="display-1 text-primary">404</h1>
+                    <h2 class="mb-4">Oops! Page Not Found</h2>
+                    <p class="lead mb-4">The page you're looking for doesn't exist or has been moved.</p>
+                    
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-3x text-muted"></i>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Go Home
+                        </a>
+                        <button class="btn btn-secondary" onclick="history.back()">
+                            <i class="fas fa-arrow-left"></i> Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 60px 0;
+}
+
+.error-page h1 {
+    font-size: 8rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-page h2 {
+    color: #6c757d;
+}
+
+.error-page .lead {
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .error-page h1 {
+        font-size: 6rem;
+    }
+}
+</style>
+{% endblock %}

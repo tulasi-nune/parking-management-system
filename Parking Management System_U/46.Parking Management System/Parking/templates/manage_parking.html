@@ -1,0 +1,790 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Parking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-parking"></i> Manage Parking Slots</h2>
+                <a href="{{ url_for('add_parking_slot') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Parking Slot
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ parking_slots | selectattr('3', 'equalto', 'Available') | list | length }}</h4>
+                            <p class="mb-0">Available Slots</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ parking_slots | selectattr('3', 'equalto', 'Occupied') | list | length }}</h4>
+                            <p class="mb-0">Occupied Slots</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ parking_slots | selectattr('3', 'equalto', 'Maintenance') | list | length }}</h4>
+                            <p class="mb-0">Under Maintenance</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ parking_slots | length }}</h4>
+                            <p class="mb-0">Total Slots</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-parking fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0">Parking Slots</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-select form-select-sm" id="statusFilter">
+                                        <option value="">All Statuses</option>
+                                        <option value="Available">Available</option>
+                                        <option value="Occupied">Occupied</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search slots...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if parking_slots %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="parkingTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Slot No</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Vehicle No</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in parking_slots %}
+                                <tr data-status="{{ slot[3] }}">
+                                    <td><strong>{{ slot[1] }}</strong></td>
+                                    <td>{{ slot[2] }}</td>
+                                    <td>{{ slot[4] }}</td>
+                                    <td>
+                                        {% if slot[3] == 'Available' %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% elif slot[3] == 'Occupied' %}
+                                            <span class="badge bg-danger">Occupied</span>
+                                        {% elif slot[3] == 'Maintenance' %}
+                                            <span class="badge bg-warning">Maintenance</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if slot[5] %}
+                                            <strong>{{ slot[5] }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_parking_slot', slot_id=slot[0]) }}" class="btn btn-sm btn-primary" title="Edit Slot">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if slot[3] == 'Available' %}
+                                            <button class="btn btn-sm btn-success" onclick="assignSlot({{ slot[0] }}, '{{ slot[1] }}')" title="Assign to Resident">
+                                                <i class="fas fa-user-plus"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" onclick="markMaintenance({{ slot[0] }})" title="Mark as Maintenance">
+                                                <i class="fas fa-tools"></i>
+                                            </button>
+                                            {% elif slot[3] == 'Occupied' %}
+                                            <button class="btn btn-sm btn-info" onclick="unassignSlot({{ slot[0] }}, '{{ slot[1] }}')" title="Unassign from Resident">
+                                                <i class="fas fa-user-minus"></i>
+                                            </button>
+                                            {% elif slot[3] == 'Maintenance' %}
+                                            <button class="btn btn-sm btn-success" onclick="markAvailable({{ slot[0] }})" title="Mark as Available">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-danger" onclick="deleteParkingSlot({{ slot[0] }}, '{{ slot[1] }}')" title="Delete Slot">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-parking fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No parking slots found</h4>
+                        <p class="text-muted">Start by adding parking slots to the system.</p>
+                        <a href="{{ url_for('add_parking_slot') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Parking Slot
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Parking Slot Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignModalLabel">Assign Parking Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Assign parking slot <strong id="assignSlotNo"></strong> (Type: <strong id="assignSlotType"></strong>) to a resident and their compatible vehicle.
+                </div>
+                
+                <div class="mb-3">
+                    <label for="residentSelect" class="form-label">
+                        <i class="fas fa-user"></i> Select Resident <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="residentSelect" onchange="loadResidentVehicles()" required>
+                        <option value="">Choose a resident...</option>
+                    </select>
+                    <div class="form-text">Select a current resident from the list</div>
+                </div>
+                
+                <div class="mb-3" id="vehicleSelectDiv" style="display: none;">
+                    <label for="vehicleSelect" class="form-label">
+                        <i class="fas fa-car"></i> Select Compatible Vehicle <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="vehicleSelect" onchange="enableAssignButton()" required>
+                        <option value="">Choose a vehicle...</option>
+                    </select>
+                    <div class="form-text" id="vehicleHelpText">Only vehicles compatible with this slot type are shown</div>
+                </div>
+                
+                <div id="assignLoading" style="display: none;" class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading residents...</p>
+                </div>
+                
+                <div id="assignError" style="display: none;" class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="assignErrorMessage"></span>
+                </div>
+                
+                <div id="noResidentsMsg" style="display: none;" class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    No residents found. Please add residents first before assigning parking slots.
+                </div>
+
+                <div id="vehicleCompatibilityInfo" style="display: none;" class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div id="compatibilityMessage"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="confirmAssignBtn" onclick="confirmAssignment()" disabled>
+                    <i class="fas fa-user-plus"></i> Assign Slot
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unassign Parking Slot Modal -->
+<div class="modal fade" id="unassignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Unassign Parking Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to unassign parking slot <strong id="unassignSlotNo"></strong>?</p>
+                <p class="text-muted">This will make the slot available for other residents.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" id="confirmUnassignBtn" onclick="confirmUnassignment()">
+                    <i class="fas fa-user-minus"></i> Unassign Slot
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="statusMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete parking slot <strong id="deleteSlotNo"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="deleteConfirmBtn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter functionality
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const rows = document.querySelectorAll('#parkingTable tbody tr');
+    
+    rows.forEach(row => {
+        const status = row.getAttribute('data-status');
+        if (filterValue === '' || status === filterValue) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#parkingTable tbody tr');
+    
+    rows.forEach(row => {
+        const cells = row.getElementsByTagName('td');
+        let match = false;
+        
+        for (let i = 0; i < cells.length - 1; i++) {
+            if (cells[i].textContent.toLowerCase().includes(searchTerm)) {
+                match = true;
+                break;
+            }
+        }
+        
+        row.style.display = match ? '' : 'none';
+    });
+});
+
+// Status update functions
+function markMaintenance(slotId) {
+    showStatusModal(slotId, 'Maintenance', 'Are you sure you want to mark this slot as under maintenance?');
+}
+
+function markAvailable(slotId) {
+    showStatusModal(slotId, 'Available', 'Are you sure you want to mark this slot as available?');
+}
+
+function showStatusModal(slotId, status, message) {
+    document.getElementById('statusMessage').textContent = message;
+    document.getElementById('confirmStatusBtn').onclick = function() {
+        updateParkingStatus(slotId, status);
+    };
+    
+    // Ensure proper modal initialization
+    const modalElement = document.getElementById('statusModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+function updateParkingStatus(slotId, status) {
+    fetch(`/update_parking_status/${slotId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating status');
+    });
+}
+
+// Global variables for assignment
+let currentSlotId = null;
+let currentSlotNo = null;
+let currentSlotType = null;
+
+// Assignment and unassignment functions
+function assignSlot(slotId, slotNo) {
+    console.log('assignSlot called with:', slotId, slotNo); // Debug
+    currentSlotId = slotId;
+    currentSlotNo = slotNo;
+    
+    // Get slot type from the table row
+    const tableRows = document.querySelectorAll('#parkingTable tbody tr');
+    let slotType = null;
+    for (let row of tableRows) {
+        const cells = row.getElementsByTagName('td');
+        if (cells[0].textContent.trim() === slotNo) {
+            slotType = cells[2].textContent.trim(); // Type column
+            break;
+        }
+    }
+    currentSlotType = slotType;
+    
+    // Reset modal state
+    resetAssignModal();
+    
+    // Set slot number and type
+    document.getElementById('assignSlotNo').textContent = slotNo;
+    document.getElementById('assignSlotType').textContent = slotType || 'Unknown';
+    
+    // Show loading and fetch residents
+    showAssignLoading(true);
+    hideAssignError();
+    
+    // Fetch residents from server
+    fetch('/get_residents_for_assignment')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Residents data received:', data); // Debug
+        showAssignLoading(false);
+        
+        if (data.success) {
+            populateResidentSelect(data.residents);
+            showAssignModal();
+        } else {
+            showAssignError(data.message || 'Failed to load residents');
+            showAssignModal();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading residents:', error);
+        showAssignLoading(false);
+        showAssignError('Failed to load residents. Please try again.');
+        showAssignModal();
+    });
+}
+
+function resetAssignModal() {
+    // Clear dropdowns
+    const residentSelect = document.getElementById('residentSelect');
+    const vehicleSelect = document.getElementById('vehicleSelect');
+    
+    residentSelect.innerHTML = '<option value="">Choose a resident...</option>';
+    vehicleSelect.innerHTML = '<option value="">Choose a vehicle...</option>';
+    
+    // Hide vehicle selection and disable assign button
+    document.getElementById('vehicleSelectDiv').style.display = 'none';
+    document.getElementById('confirmAssignBtn').disabled = true;
+    document.getElementById('vehicleCompatibilityInfo').style.display = 'none';
+    
+    // Hide all status messages
+    hideAssignError();
+    showAssignLoading(false);
+    document.getElementById('noResidentsMsg').style.display = 'none';
+}
+
+function populateResidentSelect(residents) {
+    const residentSelect = document.getElementById('residentSelect');
+    
+    // Clear existing options
+    residentSelect.innerHTML = '<option value="">Choose a resident...</option>';
+    
+    if (residents && residents.length > 0) {
+        residents.forEach(resident => {
+            const option = document.createElement('option');
+            option.value = resident.id;
+            option.textContent = `${resident.name} (${resident.username}) - Floor ${resident.floor}, Door ${resident.door_number}`;
+            residentSelect.appendChild(option);
+        });
+        console.log(`Populated ${residents.length} residents`); // Debug
+    } else {
+        document.getElementById('noResidentsMsg').style.display = 'block';
+        console.log('No residents available'); // Debug
+    }
+}
+
+function showAssignModal() {
+    try {
+        const modalElement = document.getElementById('assignModal');
+        if (modalElement) {
+            // Ensure any existing modal is properly disposed
+            const existingModal = bootstrap.Modal.getInstance(modalElement);
+            if (existingModal) {
+                existingModal.dispose();
+            }
+            
+            // Create new modal instance
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
+            modal.show();
+            console.log('Modal shown successfully'); // Debug
+        } else {
+            console.error('Modal element not found'); // Debug
+        }
+    } catch (error) {
+        console.error('Error showing modal:', error); // Debug
+        alert('Error opening assignment dialog. Please refresh the page and try again.');
+    }
+}
+
+function showAssignLoading(show) {
+    document.getElementById('assignLoading').style.display = show ? 'block' : 'none';
+}
+
+function showAssignError(message) {
+    const errorDiv = document.getElementById('assignError');
+    const errorMsg = document.getElementById('assignErrorMessage');
+    errorMsg.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function hideAssignError() {
+    document.getElementById('assignError').style.display = 'none';
+}
+
+function enableAssignButton() {
+    const residentId = document.getElementById('residentSelect').value;
+    const vehicleNo = document.getElementById('vehicleSelect').value;
+    const confirmBtn = document.getElementById('confirmAssignBtn');
+    
+    console.log('Checking assignment eligibility - Resident:', residentId, 'Vehicle:', vehicleNo); // Debug
+    
+    // Enable button only if both resident and vehicle are selected
+    confirmBtn.disabled = !(residentId && vehicleNo);
+}
+
+function loadResidentVehicles() {
+    console.log('loadResidentVehicles called'); // Debug
+    const residentId = document.getElementById('residentSelect').value;
+    const vehicleSelectDiv = document.getElementById('vehicleSelectDiv');
+    const vehicleSelect = document.getElementById('vehicleSelect');
+    const confirmBtn = document.getElementById('confirmAssignBtn');
+    const compatibilityInfo = document.getElementById('vehicleCompatibilityInfo');
+    
+    console.log('Selected resident ID:', residentId); // Debug
+    
+    if (!residentId) {
+        vehicleSelectDiv.style.display = 'none';
+        compatibilityInfo.style.display = 'none';
+        confirmBtn.disabled = true;
+        hideAssignError();
+        return;
+    }
+    
+    // Show vehicle section and reset
+    vehicleSelectDiv.style.display = 'block';
+    vehicleSelect.innerHTML = '<option value="">Loading vehicles...</option>';
+    confirmBtn.disabled = true;
+    hideAssignError();
+    compatibilityInfo.style.display = 'none';
+    
+    // Fetch vehicles for the selected resident
+    fetch(`/get_resident_vehicles_with_compatibility/${residentId}?slot_type=${encodeURIComponent(currentSlotType)}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Vehicles data received:', data); // Debug
+        
+        // Clear loading message
+        vehicleSelect.innerHTML = '<option value="">Choose a vehicle...</option>';
+        
+        if (data.success) {
+            if (data.vehicles && data.vehicles.length > 0) {
+                let compatibleCount = 0;
+                let incompatibleCount = 0;
+                
+                data.vehicles.forEach(vehicle => {
+                    const option = document.createElement('option');
+                    option.value = vehicle.vehicle_no;
+                    
+                    if (vehicle.is_compatible) {
+                        option.textContent = `${vehicle.vehicle_no} (${vehicle.vehicle_type} - ${vehicle.vehicle_company}) ✓`;
+                        option.className = 'text-success';
+                        compatibleCount++;
+                    } else {
+                        option.textContent = `${vehicle.vehicle_no} (${vehicle.vehicle_type} - ${vehicle.vehicle_company}) ✗ Incompatible`;
+                        option.disabled = true;
+                        option.className = 'text-muted';
+                        incompatibleCount++;
+                    }
+                    
+                    vehicleSelect.appendChild(option);
+                });
+                
+                // Show compatibility information
+                if (compatibleCount > 0) {
+                    document.getElementById('compatibilityMessage').innerHTML = 
+                        `<strong>${compatibleCount}</strong> compatible vehicle(s) found for <strong>${currentSlotType}</strong> slot type.${incompatibleCount > 0 ? ` <br><small class="text-muted">${incompatibleCount} incompatible vehicle(s) are disabled.</small>` : ''}`;
+                    compatibilityInfo.style.display = 'block';
+                } else {
+                    showAssignError(`No vehicles compatible with ${currentSlotType} slot type found for this resident.`);
+                }
+                
+                console.log(`Loaded ${data.vehicles.length} vehicles (${compatibleCount} compatible) for resident ${residentId}`); // Debug
+            } else {
+                vehicleSelect.innerHTML = '<option value="">No vehicles registered for this resident</option>';
+                showAssignError('This resident has no vehicles registered. Please add a vehicle first.');
+            }
+        } else {
+            vehicleSelect.innerHTML = '<option value="">Error loading vehicles</option>';
+            showAssignError(data.message || 'Failed to load vehicles for this resident');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading vehicles:', error);
+        vehicleSelect.innerHTML = '<option value="">Error loading vehicles</option>';
+        showAssignError('Failed to load vehicles. Please try again.');
+    });
+}
+
+function confirmAssignment() {
+    const residentId = document.getElementById('residentSelect').value;
+    const vehicleNo = document.getElementById('vehicleSelect').value;
+    
+    if (!residentId || !vehicleNo) {
+        showAssignError('Please select both a resident and a vehicle');
+        return;
+    }
+    
+    const confirmBtn = document.getElementById('confirmAssignBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+    
+    fetch('/assign_parking_slot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            slot_id: currentSlotId,
+            resident_id: residentId,
+            vehicle_no: vehicleNo
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message with automatic modal close
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Close modal and reload page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assignModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Add alert to page
+            const container = document.querySelector('.container-fluid');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showAssignError(data.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-user-plus"></i> Assign Slot';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAssignError('Error assigning slot. Please try again.');
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-user-plus"></i> Assign Slot';
+    });
+}
+
+function unassignSlot(slotId, slotNo) {
+    currentSlotId = slotId;
+    currentSlotNo = slotNo;
+    
+    document.getElementById('unassignSlotNo').textContent = slotNo;
+    
+    // Ensure proper modal initialization
+    const modalElement = document.getElementById('unassignModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+function confirmUnassignment() {
+    const confirmBtn = document.getElementById('confirmUnassignBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Unassigning...';
+    
+    fetch('/unassign_parking_slot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            slot_id: currentSlotId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('unassignModal')).hide();
+            location.reload();
+        } else {
+            alert('Error unassigning slot: ' + data.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-user-minus"></i> Unassign Slot';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error unassigning slot');
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-user-minus"></i> Unassign Slot';
+    });
+}
+
+// Delete parking slot function
+function deleteParkingSlot(slotId, slotNo) {
+    document.getElementById('deleteSlotNo').textContent = slotNo;
+    document.getElementById('deleteConfirmBtn').href = `/delete_parking_slot/${slotId}`;
+    
+    // Ensure proper modal initialization
+    const modalElement = document.getElementById('deleteModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+// Add animation to table rows
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('#parkingTable tbody tr');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+        }, index * 50);
+    });
+});
+</script>
+{% endblock %}

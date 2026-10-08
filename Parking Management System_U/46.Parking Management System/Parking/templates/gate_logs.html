@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Gate Logs{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Gate Logs</h2>
+    <div class="mb-3">
+        <button class="btn btn-outline-primary me-2" onclick="exportTable('csv')"><i class="fas fa-file-csv"></i> Export CSV</button>
+        <button class="btn btn-outline-success me-2" onclick="exportTable('excel')"><i class="fas fa-file-excel"></i> Export Excel</button>
+        <button class="btn btn-outline-danger" onclick="exportTable('pdf')"><i class="fas fa-file-pdf"></i> Export PDF</button>
+    </div>
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="table table-bordered" id="gateLogsTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Vehicle No</th>
+                    <th>Company</th>
+                    <th>Type</th>
+                    <th>Color</th>
+                    <th>Model</th>
+                    <th>Resident Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Floor</th>
+                    <th>Door</th>
+                    <th>Entry Time</th>
+                    <th>Exit Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log[0] }}</td>
+                    <td>{{ log[1] }}</td>
+                    <td>{{ log[2] or '-' }}</td>
+                    <td>{{ log[3] or '-' }}</td>
+                    <td>{{ log[4] or '-' }}</td>
+                    <td>{{ log[5] or '-' }}</td>
+                    <td>{{ log[6] or '-' }}</td>
+                    <td>{{ log[7] or '-' }}</td>
+                    <td>{{ log[8] or '-' }}</td>
+                    <td>{{ log[9] or '-' }}</td>
+                    <td>{{ log[10] or '-' }}</td>
+                    <td>{{ log[11] or '-' }}</td>
+                    <td>{{ log[12] or '-' }}</td>
+                    <td>{{ log[13] or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p>No logs found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
+<script>
+function exportTable(type) {
+    const table = document.getElementById('gateLogsTable');
+    if (!table) return;
+    if (type === 'csv') {
+        let csv = XLSX.utils.sheet_to_csv(XLSX.utils.table_to_sheet(table));
+        let blob = new Blob([csv], { type: 'text/csv' });
+        let link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'gate_logs.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else if (type === 'excel') {
+        let wb = XLSX.utils.book_new();
+        let ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, 'Gate Logs');
+        XLSX.writeFile(wb, 'gate_logs.xlsx');
+    } else if (type === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        let doc = new jsPDF();
+        doc.autoTable({ html: '#gateLogsTable' });
+        doc.save('gate_logs.pdf');
+    }
+}
+</script>
+{% endblock %}

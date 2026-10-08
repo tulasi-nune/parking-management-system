@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Parking Management S                        <a href="{{ url_for('add_parking_slot') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-plus"></i> Add Slot
+                        </a>em{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Welcome Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">
+                                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                            </h2>
+                            <p class="mb-0">Welcome back, {{ admin_data.username }}! Manage your parking system efficiently.</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-0">
+                                <i class="fas fa-clock me-2"></i>
+                                <span id="current-time"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-lg-3">
+            <div class="card text-center h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h5 class="card-title">Manage Residents</h5>
+                    <p class="card-text text-muted">Add, edit, and manage resident information</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('manage_residents') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>View All
+                        </a>
+                        <a href="{{ url_for('add_resident') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Add New
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card text-center h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-3">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h5 class="card-title">Manage Vehicles</h5>
+                    <p class="card-text text-muted">Register and manage vehicle information</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('manage_vehicles') }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-eye me-1"></i>View All
+                        </a>
+                        <a href="{{ url_for('add_vehicle') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-plus me-1"></i>Add New
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card text-center h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-3">
+                        <i class="fas fa-parking"></i>
+                    </div>
+                    <h5 class="card-title">Manage Parking</h5>
+                    <p class="card-text text-muted">Allocate and manage parking slots</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('manage_parking') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-eye me-1"></i>View All
+                        </a>
+                        <a href="{{ url_for('add_parking_slot') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-plus me-1"></i>Add New
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card text-center h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="display-4 text-danger mb-3">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h5 class="card-title">Gate Entry</h5>
+                    <p class="card-text text-muted">QR code scanner for entry/exit</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('gate_entry') }}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-camera me-1"></i>Open Scanner
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Tools -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info mb-3">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h5 class="card-title">Complaints</h5>
+                    <p class="card-text text-muted">View and manage resident complaints</p>
+                    <a href="{{ url_for('complaints') }}" class="btn btn-info">
+                        <i class="fas fa-eye me-1"></i>View Complaints
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success mb-3">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h5 class="card-title">Charges & Payments</h5>
+                    <p class="card-text text-muted">Manage parking charges and collect payments</p>
+                    <a href="{{ url_for('manage_charges') }}" class="btn btn-success">
+                        <i class="fas fa-dollar-sign me-1"></i>View Charges
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <h5 class="card-title">Update Status</h5>
+                    <p class="card-text text-muted">Change resident status (Current/Past)</p>
+                    <a href="{{ url_for('manage_residents') }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Update Status
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Profile -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-cog me-2"></i>Admin Profile
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Account Information</h6>
+                            <p><strong>Username:</strong> {{ admin_data.username }}</p>
+                            <p><strong>Email:</strong> {{ admin_data.email }}</p>
+                            <p><strong>Contact:</strong> {{ admin_data.contact }}</p>
+                            <p><strong>Address:</strong> {{ admin_data.address }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <a href="{{ url_for('admin_profile_update') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-1"></i>Update Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    document.getElementById('current-time').textContent = timeString;
+}
+
+// Update time every second
+setInterval(updateTime, 1000);
+updateTime(); // Initial call
+
+// Add card hover animations
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.transition = 'transform 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}
